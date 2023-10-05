@@ -1,0 +1,14 @@
+/node_modules
+/.env
+/artifacts
+/unused
+/contracts/draft
+**/.DS_Store
+
+# foundry
+/cache_forge
+/out
+
+# push later
+/contracts/risk-market-example
+/contracts/util/EIP712.sol
