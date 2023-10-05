@@ -1,0 +1,4 @@
+[submodule "dapps/recoverable-token/lib/forge-std"]
+	path = dapps/recoverable-token/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+	ignore = dirty
