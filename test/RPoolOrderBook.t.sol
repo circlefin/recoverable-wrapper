@@ -27,22 +27,24 @@ contract RPoolOrderBookTest is Test {
     /**
      * Emitted when an exchange is successful.
      * @param user bidder
-     * @param lp supplying the base tokens
-     * @param p amount of unsettled ERC20R tokens LP receives
-     * @param x amount of base tokens user receives
+     * @param lp LP supplying the base tokens
+     * @param rAmount amount of unsettled ERC20R tokens LP receives
+     * @param baseAmount amount of base tokens user receives
+     * @param bidID bidID
      */
-    event Exchange(address indexed user, address indexed lp, uint256 p, uint256 x);
+    event Exchange(address indexed user, address indexed lp, uint256 rAmount, uint256 baseAmount, bytes32 bidID);
 
     /**
      * Emitted when a Bid is posted. 
      * @param bidder account asking for base tokens
      * @param nonce current ERC20R nonce of the bidder
-     * @param amount of ERC20R unsettled tokens bidder is selling
-     * @param minQuote minimum accepted base tokens in return
-     * @param expiration of bid
+     * @param rAmount of ERC20R unsettled tokens bidder is selling
+     * @param minBaseAmount minimum accepted base tokens in return
+     * @param expiration of bid in absolute timestamp (seconds)
+     * @param blockNumber of bid when posted 
      * @param bidID bidID
      */
-    event Bid(address indexed bidder, uint128 nonce, uint256 amount, uint128 minQuote, uint128 expiration, bytes32 bidID);
+    event Bid(address indexed bidder, uint128 nonce, uint256 rAmount, uint128 minBaseAmount, uint128 expiration, uint blockNumber, bytes32 bidID);
 
     /**
      * Emitted if bidder cancels a bid it already posted. 
@@ -79,16 +81,16 @@ contract RPoolOrderBookTest is Test {
         _wrapUnsettle(alice, 100);
         uint128 expiry = (block.timestamp + HALF_DAY).toUint128();
         uint128 nonce = rtoken.nonce(alice);
-        bytes32 bidID = rpob.getBidID(alice, nonce, amount);
+        bytes32 bidID = rpob.getBidID(alice, nonce, amount, block.number);
         vm.expectEmit();
-        emit Bid(alice, rtoken.nonce(alice), amount, 30, expiry, bidID);
+        emit Bid(alice, rtoken.nonce(alice), amount, 30, expiry, block.number, bidID);
         assertEq(rpob.postBid(alice, amount, 30, expiry), bidID);
         assertEqBid(bidID, BidInfo(expiry, 30));
     }
 
     function _postBid(uint128 expiry, uint256 amount, uint128 minQuote) private returns (bytes32){
         uint128 nonce = rtoken.nonce(alice);
-        bytes32 bidID = rpob.getBidID(alice, nonce, amount);
+        bytes32 bidID = rpob.getBidID(alice, nonce, amount, block.number);
         assertEq(rpob.postBid(alice, amount, minQuote, expiry), bidID);
         return bidID;
     }
@@ -97,10 +99,11 @@ contract RPoolOrderBookTest is Test {
         uint128 expiry = (block.timestamp + HALF_DAY).toUint128();
         _wrapUnsettle(alice, 100);
         bytes32 bidID = _postBid(expiry, 50, 30);
+        uint128 nonce = rtoken.nonce(alice);
         vm.expectEmit();
         emit BidCancelled(bidID);
         vm.startPrank(alice);
-        rpob.cancelBid(bidID);
+        rpob.cancelBid(nonce, 50, block.number);
         vm.stopPrank();
         (uint128 e,) = rpob.bids(bidID);
         assertEq(e, 0);
@@ -108,10 +111,10 @@ contract RPoolOrderBookTest is Test {
 
     function testCancelBid_fail() public {
         _wrapUnsettle(alice, 100);
-        bytes32 bidID = rpob.getBidID(alice, 3, 1);
+        uint128 nonce = rtoken.nonce(alice);
         vm.expectRevert('Bid not found.');
         vm.startPrank(alice);
-        rpob.cancelBid(bidID);
+        rpob.cancelBid(nonce, 3, block.number);
         vm.stopPrank();
     }
 
@@ -123,7 +126,7 @@ contract RPoolOrderBookTest is Test {
         vm.startPrank(bob);
         uint128 fakeNonce = rtoken.nonce(alice) + 1;
         vm.expectRevert("Nonce has changed.");
-        rpob.matchBid(alice, fakeNonce, 50, 30);
+        rpob.matchBid(alice, fakeNonce, 50, 30, block.number);
         vm.stopPrank();
     }
 
@@ -135,7 +138,7 @@ contract RPoolOrderBookTest is Test {
         vm.startPrank(bob);
         uint128 nonce = rtoken.nonce(alice);
         vm.expectRevert("Bid not found.");
-        rpob.matchBid(alice, nonce, 5, 30);
+        rpob.matchBid(alice, nonce, 5, 30, block.number);
         vm.stopPrank();
     }
 
@@ -147,20 +150,21 @@ contract RPoolOrderBookTest is Test {
         vm.startPrank(bob);
         uint128 nonce = rtoken.nonce(alice);
         vm.expectRevert("Quote cannot be less than minimum quote.");
-        rpob.matchBid(alice, nonce, 50, 3);
+        rpob.matchBid(alice, nonce, 50, 3, block.number);
         vm.stopPrank();
     }
 
     function testMatchBid_fail_expired() public {
         uint128 expiry = (block.timestamp + HALF_DAY).toUint128();
         _wrapUnsettle(alice, 100);
+        uint256 blockNumber = block.number;
         _postBid(expiry, 50, 30);
         erc20.mint(bob, 100);
         vm.startPrank(bob);
         uint128 nonce = rtoken.nonce(alice);
         skip(HALF_DAY);
         vm.expectRevert("Bid has expired.");
-        rpob.matchBid(alice, nonce, 50, 30);
+        rpob.matchBid(alice, nonce, 50, 30, blockNumber);
         vm.stopPrank();
     }
 
@@ -172,7 +176,7 @@ contract RPoolOrderBookTest is Test {
         vm.startPrank(bob);
         uint128 nonce = rtoken.nonce(alice);
         vm.expectRevert("ERC20: insufficient allowance");
-        rpob.matchBid(alice, nonce, 50, 30);
+        rpob.matchBid(alice, nonce, 50, 30, block.number);
         vm.stopPrank();
     }
 
@@ -185,15 +189,15 @@ contract RPoolOrderBookTest is Test {
     function testMatchBid() public {
         uint128 expiry = (block.timestamp + HALF_DAY).toUint128();
         _wrapUnsettle(alice, 100);
-        _postBid(expiry, 50, 30);
+        bytes32 bidID =  _postBid(expiry, 50, 30);
         erc20.mint(bob, 200);
         uint128 nonce = rtoken.nonce(alice);
         approve(erc20, bob, address(rpob), 100);
         approve(rtoken, alice, address(rpob), 100);
         vm.expectEmit();
-        emit Exchange(alice, bob, 50, 30);
+        emit Exchange(alice, bob, 50, 30, bidID);
         vm.startPrank(bob);
-        rpob.matchBid(alice, nonce, 50, 30);
+        rpob.matchBid(alice, nonce, 50, 30, block.number);
         vm.stopPrank();
         assertEq(erc20.balanceOf(alice), 30);
         _checkBalances(alice, 50, 0);

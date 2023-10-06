@@ -6,7 +6,10 @@ import {IERC20R} from "../interfaces/IERC20R.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @title OrderBook implementation of an RPool
+ * @title OrderBook reference implementation of an RPool
+ * This contract allows users to post sell orders of their unsettled ERC20R tokens in exchange for 
+ * the underlying base token. LPs can match the orders. 
+ * This contract is for demonstration purposes and has not been audited or meant for production use.
  */
 contract RPoolOrderBook {
     IERC20R public token;
@@ -23,22 +26,24 @@ contract RPoolOrderBook {
     /**
      * Emitted when an exchange is successful.
      * @param user bidder
-     * @param lp supplying the base tokens
-     * @param p amount of unsettled ERC20R tokens LP receives
-     * @param x amount of base tokens user receives
+     * @param lp LP supplying the base tokens
+     * @param rAmount amount of unsettled ERC20R tokens LP receives
+     * @param baseAmount amount of base tokens user receives
+     * @param bidID bidID
      */
-    event Exchange(address indexed user, address indexed lp, uint256 p, uint256 x);
+    event Exchange(address indexed user, address indexed lp, uint256 rAmount, uint256 baseAmount, bytes32 bidID);
 
     /**
      * Emitted when a Bid is posted. 
      * @param bidder account asking for base tokens
      * @param nonce current ERC20R nonce of the bidder
-     * @param amount of ERC20R unsettled tokens bidder is selling
-     * @param minQuote minimum accepted base tokens in return
-     * @param expiration of bid
+     * @param rAmount of ERC20R unsettled tokens bidder is selling
+     * @param minBaseAmount minimum accepted base tokens in return
+     * @param expiration of bid in absolute timestamp (seconds)
+     * @param blockNumber of bid when posted 
      * @param bidID bidID
      */
-    event Bid(address indexed bidder, uint128 nonce, uint256 amount, uint128 minQuote, uint128 expiration, bytes32 bidID);
+    event Bid(address indexed bidder, uint128 nonce, uint256 rAmount, uint128 minBaseAmount, uint128 expiration, uint blockNumber, bytes32 bidID);
 
     /**
      * Emitted if bidder cancels a bid it already posted. 
@@ -51,8 +56,15 @@ contract RPoolOrderBook {
         base = IERC20(token.baseToken());
     }
 
-    function getBidID(address bidder, uint128 nonce, uint256 amount) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(bidder, nonce, amount));
+    /**
+     * 
+     * @param bidder account asking for base tokens
+     * @param nonce current ERC20R nonce of the bidder
+     * @param rAmount of ERC20R unsettled tokens bidder is selling
+     * @param blockNumber of the transaction when the bid was posted 
+     */
+    function getBidID(address bidder, uint128 nonce, uint256 rAmount, uint blockNumber) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(bidder, nonce, rAmount, blockNumber));
     }
 
     /**
@@ -60,14 +72,14 @@ contract RPoolOrderBook {
      * @param bidder account requesting swap
      * @param amount to swap
      * @param minQuote minimum accepted base tokens in return
-     * @param expiration of bid 
+     * @param expiration of bid in absolute timestamp (seconds)
      */
     function postBid(address bidder, uint256 amount, uint128 minQuote, uint128 expiration) external returns (bytes32 bidID) {
         uint128 nonce = token.nonce(bidder);
-        bidID = getBidID(bidder, nonce, amount);
+        bidID = getBidID(bidder, nonce, amount, block.number);
 
         bids[bidID] = BidInfo(expiration, minQuote);
-        emit Bid(bidder, nonce, amount, minQuote, expiration, bidID);
+        emit Bid(bidder, nonce, amount, minQuote, expiration, block.number, bidID);
     }
 
     /**
@@ -79,11 +91,12 @@ contract RPoolOrderBook {
      * @param nonce nonce that matches with bidID and bidder's current ERC20R nonce
      * @param amount of ERC20R tokens the LP will receive
      * @param quote of number of base tokens the LP will give to the bidder
+     * @param blockNumber when the bid was posted
      */
-    function matchBid(address bidder, uint128 nonce, uint256 amount, uint128 quote) external {
+    function matchBid(address bidder, uint128 nonce, uint256 amount, uint128 quote, uint blockNumber) external {
         address lp = msg.sender;
         require(token.nonce(bidder) == nonce, "Nonce has changed.");
-        bytes32 bidID = getBidID(bidder, nonce, amount);
+        bytes32 bidID = getBidID(bidder, nonce, amount, blockNumber);
         require(bids[bidID].expiration > 0, "Bid not found.");
         require(quote >= bids[bidID].minQuote, "Quote cannot be less than minimum quote.");
         require(block.timestamp < bids[bidID].expiration, "Bid has expired.");
@@ -93,15 +106,18 @@ contract RPoolOrderBook {
 
         //delete bid 
         delete bids[bidID];
-        emit Exchange(bidder, lp, amount, quote);
+        emit Exchange(bidder, lp, amount, quote, bidID);
     }
 
     /**
      * Function to allow bidder to cancel. Assumes that the caller is the bidder.
      * A bid can only be cancelled by the bidder himself.
-     * @param bidID of the bid
+     * @param nonce current ERC20R nonce of the bidder
+     * @param rAmount of ERC20R unsettled tokens bidder is selling
+     * @param blockNumber of the transaction when the bid was posted 
      */
-    function cancelBid(bytes32 bidID) external {
+    function cancelBid(uint128 nonce, uint256 rAmount, uint blockNumber) external {
+        bytes32 bidID = getBidID(msg.sender, nonce, rAmount, blockNumber);
         require(bids[bidID].expiration > 0, "Bid not found.");
         delete bids[bidID];
         emit BidCancelled(bidID);
