@@ -20,7 +20,7 @@ contract RPoolOrderBook {
         uint128 minQuote;
     }
     
-    //key is abi.encode(address bidder, uint128 nonce, uint256 amount)
+    // key is abi.encode(address bidder, uint128 nonce, uint256 amount, uint256 blockNumber)
     mapping(bytes32 => BidInfo) public bids;
 
     /**
@@ -104,7 +104,6 @@ contract RPoolOrderBook {
         token.transferFrom(bidder, lp, amount, true);
         base.transferFrom(lp, bidder, quote);
 
-        //delete bid 
         delete bids[bidID];
         emit Exchange(bidder, lp, amount, quote, bidID);
     }
