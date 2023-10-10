@@ -57,11 +57,14 @@ contract RPoolOrderBook {
     }
 
     /**
-     * 
+     * Returns the bidID, which is the hash of the following parameters. 
      * @param bidder account asking for base tokens
      * @param nonce current ERC20R nonce of the bidder
      * @param rAmount of ERC20R unsettled tokens bidder is selling
-     * @param blockNumber of the transaction when the bid was posted 
+     * @param blockNumber of the transaction when the bid was posted     
+     * Note: This does imply limiting each bidder to 1 bid per block of the same amount. An alternative
+     * design that removes this limitation is representing bidID through an auto-incrementing counter,
+     * and storing the following fields on-chain in a mapping to be verified at match. 
      */
     function getBidID(address bidder, uint128 nonce, uint256 rAmount, uint blockNumber) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(bidder, nonce, rAmount, blockNumber));
