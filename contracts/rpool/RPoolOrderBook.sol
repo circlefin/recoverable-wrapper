@@ -75,6 +75,7 @@ contract RPoolOrderBook {
      * @param expiration of bid in absolute timestamp (seconds)
      */
     function postBid(address bidder, uint256 amount, uint128 minQuote, uint128 expiration) external returns (bytes32 bidID) {
+        require(expiration > block.timestamp, "Expiration of bid must be in the future.");
         uint128 nonce = token.nonce(bidder);
         bidID = getBidID(bidder, nonce, amount, block.number);
 
@@ -94,8 +95,9 @@ contract RPoolOrderBook {
      * @param blockNumber when the bid was posted
      */
     function matchBid(address bidder, uint128 nonce, uint256 amount, uint128 quote, uint blockNumber) external {
+        // LP matches bid contingent on the the funds' probability of recovery staying the same.
+        require(token.nonce(bidder) == nonce, "Nonce has changed."); 
         address lp = msg.sender;
-        require(token.nonce(bidder) == nonce, "Nonce has changed.");
         bytes32 bidID = getBidID(bidder, nonce, amount, blockNumber);
         require(bids[bidID].expiration > 0, "Bid not found.");
         require(quote >= bids[bidID].minQuote, "Quote cannot be less than minimum quote.");

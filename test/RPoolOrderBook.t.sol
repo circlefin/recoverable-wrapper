@@ -88,6 +88,14 @@ contract RPoolOrderBookTest is Test {
         assertEqBid(bidID, BidInfo(expiry, 30));
     }
 
+    function testPostBid_fail_expiration() public {
+        uint256 amount = 50;
+        _wrapUnsettle(alice, 100);
+        uint128 expiry = 0;
+        vm.expectRevert("Expiration of bid must be in the future.");
+        rpob.postBid(alice, amount, 30, expiry);
+    }
+
     function _postBid(uint128 expiry, uint256 amount, uint128 minQuote) private returns (bytes32){
         uint128 nonce = rtoken.nonce(alice);
         bytes32 bidID = rpob.getBidID(alice, nonce, amount, block.number);
