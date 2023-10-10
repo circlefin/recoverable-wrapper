@@ -77,6 +77,10 @@ contract ERC20RWrapperTest is Test {
         assertEq(rtoken.governanceAddress(), governance);
     }
 
+    function testDecimals() public {
+        assertEq(rtoken.decimals(), erc20.decimals());
+    }
+
     function _wrap(address account, uint256 amount) private {
         erc20.mint(account, amount);
         vm.startPrank(account);
