@@ -237,6 +237,8 @@ contract RPoolAMM is Ownable {
         uint256 unadjustedBaseTokens = _getUnadjustedBaseAmount(rAmount, quotes);
         uint256 totalAfter = token.balanceOf(address(this), true) - unadjustedBaseTokens + rAmount;
         uint256 settledAfter = token.balanceOf(address(this), false) - unadjustedBaseTokens;
+
+        // apply bonding curve described in the paper 
         baseTokens = Math.min(unadjustedBaseTokens, unadjustedBaseTokens.mul(settledAfter).mul(bondingMultiplier).div(totalAfter));
 
         token.transferFrom(account, address(this), rAmount, true);
