@@ -7,6 +7,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 /**
  * @title EIP712
  * @notice A library that provides EIP712 helper functions
+ * Credit to the EIP712 library as implemented in the Circle centre-tokens repository.
  */
 library EIP712 {
     

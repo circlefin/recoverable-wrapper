@@ -26,8 +26,8 @@ contract RPoolAMM is Ownable {
     // keccak256(address account, uint64 nonce, uint256 amount, uint256 expiration, uint256 quote)
     bytes32 public constant QUOTE_TYPE_HASH = 0x550c61ee2589627c43a1db81922bc00c1bb90a2545dd2325e49034b5128dfe1b;
 
-    IERC20R public token;
-    IERC20 public baseToken;
+    IERC20R public immutable token;
+    IERC20 public immutable baseToken;
 
     /**
      * @notice Total number of LP shares
@@ -49,8 +49,8 @@ contract RPoolAMM is Ownable {
      * and minExchangeRate is 80%, this pool only accepts exchanges for ERC20R funds with 
      * an estimated 10-20% risk of clawback. 
      */
-    uint256 public maxExchangeRate; // (based on decimals, e.g. 1000000 == 1. )
-    uint256 public minExchangeRate; 
+    uint256 public immutable maxExchangeRate; // (based on decimals, e.g. 1000000 == 1. )
+    uint256 public immutable minExchangeRate; 
     uint8 public constant decimals = 6;
 
     /**
@@ -192,11 +192,11 @@ contract RPoolAMM is Ownable {
      */
     function removeLiquidity(uint256 shares)
         external
-        returns (uint256 toWithdraw)
+        returns (uint256 liquidityToRemove)
     {
         require(shares <= lpShares[msg.sender], "Cannot redeem more shares than LP owns.");
-        toWithdraw = _sharesValue(shares);
-        require(toWithdraw > 0, "Nothing to withdraw.");
+        liquidityToRemove = _sharesValue(shares);
+        require(liquidityToRemove > 0, "Nothing to withdraw.");
         
         if (allowedQuoterRound[msg.sender] > 0) {
             require(_sharesValue(lpShares[msg.sender] - shares) >= minQuoterShareValue, "Quoters must keep minimum share value in pool.");
@@ -205,7 +205,11 @@ contract RPoolAMM is Ownable {
         uint256 total = token.balanceOf(address(this), true);
         uint256 settled = token.balanceOf(address(this), false);
 
-        uint256 settledToWithdraw = toWithdraw.mul(settled).div(total);
+        uint256 settledToWithdraw = liquidityToRemove.mul(settled).div(total);
+
+        lpShares[msg.sender] -= shares;
+        totalShares -= shares;
+
         // Transfer settled tokens proportional to pool ratio (and unwrap to base token)
         token.unwrapTo(
             msg.sender,
@@ -215,13 +219,11 @@ contract RPoolAMM is Ownable {
         token.transferFrom(
             address(this),
             msg.sender,
-            uint128(toWithdraw - settledToWithdraw), //includes fees they've earned
+            uint128(liquidityToRemove - settledToWithdraw), //includes fees they've earned
             true
         );
 
-        lpShares[msg.sender] -= shares;
-        totalShares -= shares;
-        emit RemoveLiquidity(msg.sender, shares, toWithdraw);
+        emit RemoveLiquidity(msg.sender, shares, liquidityToRemove);
     }
 
     /**
@@ -235,6 +237,14 @@ contract RPoolAMM is Ownable {
         roundNumber++;
         _checkSigs(account, rAmount, token.nonce(account), quotes);
         uint256 unadjustedBaseTokens = _getUnadjustedBaseAmount(rAmount, quotes);
+        uint256 settled = token.balanceOf(address(this), false);
+
+        /**
+         * Note: In this toy example, the bonding curve factor is based on what the final state would be without any bonding curve. 
+         * This should not be done in practice as it results in underutilization of the pool. One could base the bonding curve factor 
+         * on the actual predicted final state which includes the bonding curve, though this will be more computationally expensive. 
+         */
+        require(unadjustedBaseTokens < settled, "Cannot withdraw all settled tokens in this version of the RPool.");
         uint256 totalAfter = token.balanceOf(address(this), true) - unadjustedBaseTokens + rAmount;
         uint256 settledAfter = token.balanceOf(address(this), false) - unadjustedBaseTokens;
 
