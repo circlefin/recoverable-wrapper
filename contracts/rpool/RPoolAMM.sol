@@ -246,7 +246,7 @@ contract RPoolAMM is Ownable {
          */
         require(unadjustedBaseTokens < settled, "Cannot withdraw all settled tokens in this version of the RPool.");
         uint256 totalAfter = token.balanceOf(address(this), true) - unadjustedBaseTokens + rAmount;
-        uint256 settledAfter = token.balanceOf(address(this), false) - unadjustedBaseTokens;
+        uint256 settledAfter = settled - unadjustedBaseTokens;
 
         // apply bonding curve described in the paper 
         baseTokens = Math.min(unadjustedBaseTokens, unadjustedBaseTokens.mul(settledAfter).mul(bondingMultiplier).div(totalAfter));
