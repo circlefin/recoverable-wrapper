@@ -4,8 +4,7 @@ This repo contains prototyping work for recoverable tokens.
 
 # todo
 
-- Make an escrow version (disallows spending of unsettled funds, and sender can retract the funds )
-- Refine and test the RPool contracts
+- If wanted by SCP: Make an escrow version (disallows spending of unsettled funds, and sender can retract the funds )
 
 # get started
 
