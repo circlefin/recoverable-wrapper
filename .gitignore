@@ -8,7 +8,3 @@
 # foundry
 /cache_forge
 /out
-
-# push later
-/contracts/rpool/RPoolAMM.sol
-/contracts/util/EIP712.sol
