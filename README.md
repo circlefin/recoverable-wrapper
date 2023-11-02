@@ -1,20 +1,16 @@
-# intro
+# Recoverable Wrapper Tokens
 
-This repo contains prototyping work for recoverable tokens.
+This repo contains implementations pertaining to recoverable wrapper tokens.
 
-# todo
+# Get started
 
-- If wanted by SCP: Make an escrow version (disallows spending of unsettled funds, and sender can retract the funds )
-
-# get started
-
-## install dependences
+## Install dependences
 
 - Run `git submodule update --init --recursive` to update/download all libraries.
 - Run `nvm use 16` to use node 16.
 - Run `yarn install` to install any additional dependencies.
 
-## install foundry
+## Install foundry
 
 - Run `curl -L https://foundry.paradigm.xyz | bash`
 - Follow the instructions of that command to source env file
