@@ -4,8 +4,6 @@ We argue that many DeFi services will likely refuse to accept unsettled recovera
 
 This repo provides a sample implementation of an RPool, which is a pool designed to exchange an unsettled ERC20R asset for a base ERC20 of the same asset.
 
-Note: these contracts have not been audited and are meant for demonstration purposes.
-
 ## Paper
 
-For more info about this research can be found here: [insert link]
+For more info about this research can be found here: [coming soon]
