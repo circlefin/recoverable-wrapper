@@ -41,6 +41,7 @@ library RecordsDequeLib {
     error InvalidUnfreezeAmount(uint256 currentFrozenInRecord, uint256 unfreezeAmount);
     error InvalidFreezeAmount(uint256 remainingToFreeze, uint256 freezeAmount);
     error InvalidSubtractedValue(uint256 rawIndex, uint256 amount, uint256 subtractedValue);
+    error IndexZeroNotDeletable();
 
     /**
      * Returns the index of the next Record if it were to be enqueued to the RecordDeque. 
@@ -92,6 +93,7 @@ library RecordsDequeLib {
      * @param rawIndex of the record to delete 
      */
     function deleteAt(RecordsDeque storage rd, uint256 rawIndex) public {
+        if (rawIndex == 0) revert IndexZeroNotDeletable();
         uint256 next = rd.queue[rawIndex].next;
         uint256 prev = rd.queue[rawIndex].prev; 
         if (rd.tail == rawIndex && rd.tail != rd.head) {
@@ -100,8 +102,11 @@ library RecordsDequeLib {
         if (rd.head == rawIndex) {
             rd.head = next;
         }
+        
         rd.queue[prev].next = next;
-        rd.queue[next].prev = prev;
+        if (next > 0) {
+            rd.queue[next].prev = prev;
+        }
         delete rd.queue[rawIndex];
     }
 
@@ -160,8 +165,6 @@ library RecordsDequeLib {
      * It first checks that there's enough frozen in the first place to unfreeze. 
      * If it unfreezes the remainder of the frozen amount in the record and the record is past settlement, 
      * then it will delete the record. Otherwise, it will simply adjust the frozen amount noted in the record. 
-     * Note that the queue may still think it's part of the unsettled records if the queue has not been cleaned
-     * recently. In that case, it must carefully delete from the doubly linked list. 
      * @param rd - Records Deque
      * @param rawIndex - index of record
      * @param unfreezeAmount - amount to unfreeze at record 
