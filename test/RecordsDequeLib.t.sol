@@ -203,6 +203,18 @@ contract RecordsTest is Test {
         assertEq(rd.tail, 3);
     }
 
+    function testDeleteInMixedOrder() public {
+        Record memory r = Record(100, block.timestamp + SECONDS_PER_DAY, 0, 0, 0);
+        for (uint i = 0; i < 4; i++) {
+            rd.enqueue(r.amount, r.settlementTime);
+        }
+        rd.deleteAt(4);
+        rd.deleteAt(1);
+        Record memory sentinel = rd.getAt(0);
+        assertEq(sentinel.prev, 0);
+        assertEq(sentinel.next, 0);
+    }
+
     function testDeleteAt_justOne() public {
         Record memory r = Record(100, block.timestamp + SECONDS_PER_DAY, 0, 0, 0);
         rd.enqueue(r.amount, r.settlementTime);

@@ -67,7 +67,12 @@ library RecordsDequeLib {
             rd.head = rd.tail + 1;
             r.prev = 0;
         }
-        rd.queue[rd.tail].next = rd.tail + 1;
+
+        // Keep sentinel node untouched
+        if (rd.tail != 0) {
+            rd.queue[rd.tail].next = rd.tail + 1;
+        }
+
         rd.tail++;
         rd.queue[rd.tail] = r;
 
