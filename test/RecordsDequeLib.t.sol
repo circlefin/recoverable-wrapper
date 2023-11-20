@@ -23,6 +23,7 @@ contract RecordsTest is Test {
     error InvalidUnfreezeAmount(uint256 currentFrozenInRecord, uint256 unfreezeAmount);
     error InvalidFreezeAmount(uint256 remainingToFreeze, uint256 freezeAmount);
     error InvalidSubtractedValue(uint256 rawIndex, uint256 amount, uint256 subtractedValue);
+    error SentinelNodeNotDeletable();
 
     function assertEqRecords(Record memory r1, Record memory r2) private {
         assertEq(r1.amount, r2.amount);
@@ -162,6 +163,7 @@ contract RecordsTest is Test {
         assertEqRecords(rd.getAt(rawIndex), Record(0, 0, 0, 0, 0));
         assertEq(rd.head, 1);
         assertEq(rd.tail, 1);
+        assertEq(rd.getAt(0).prev, 0);
     }
 
     function testDeleteAt_middle() public {
@@ -201,6 +203,18 @@ contract RecordsTest is Test {
         assertEq(rd.tail, 3);
     }
 
+    function testDeleteInMixedOrder() public {
+        Record memory r = Record(100, block.timestamp + SECONDS_PER_DAY, 0, 0, 0);
+        for (uint i = 0; i < 4; i++) {
+            rd.enqueue(r.amount, r.settlementTime);
+        }
+        rd.deleteAt(4);
+        rd.deleteAt(1);
+        Record memory sentinel = rd.getAt(0);
+        assertEq(sentinel.prev, 0);
+        assertEq(sentinel.next, 0);
+    }
+
     function testDeleteAt_justOne() public {
         Record memory r = Record(100, block.timestamp + SECONDS_PER_DAY, 0, 0, 0);
         rd.enqueue(r.amount, r.settlementTime);
@@ -212,6 +226,11 @@ contract RecordsTest is Test {
         rd.deleteAt(rawIndex);
         assertEq(rd.head, 0);
         assertEq(rd.tail, 2);
+    }
+
+    function testDeleteAtZero_error() public {
+        vm.expectRevert(abi.encodeWithSelector(SentinelNodeNotDeletable.selector));
+        rd.deleteAt(0);
     }
 
     function testFreezeRecord() public {
