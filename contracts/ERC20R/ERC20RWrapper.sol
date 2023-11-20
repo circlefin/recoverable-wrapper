@@ -84,6 +84,7 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     error CallerMustBeGovernance(address caller);
     error RecordNotFound(address account, uint256 rawIndex);
     error RecordAlreadySettled(address account, uint256 rawIndex);
+    error SelfTransferNotAllowed();
 
     constructor(
         string memory name_,
@@ -408,6 +409,12 @@ contract ERC20RWrapper is IERC20R, ERC20 {
         // there is no need to check if `from` is the zero address, because it cannot 
         // call transfer, nor would anyone have approval to spend from it. 
         _checkNotZeroAddress(to);
+
+        // Transfering to self should not be allowed, would add confusing UX 
+        if (to == from) {
+            revert SelfTransferNotAllowed();
+        }
+
         _clean(from);
         _clean(to);
         uint256 unsettledUsed = 0;
