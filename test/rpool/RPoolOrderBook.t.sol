@@ -24,6 +24,7 @@ contract RPoolOrderBookTest is Test {
     RPoolOrderBook private rpob;
     address alice = makeAddr('alice');
     address bob = makeAddr('bob');
+    address temp = makeAddr("temp");
     uint256 private constant HALF_DAY = SECONDS_PER_DAY / 2;
 
     struct BidInfo {
@@ -60,8 +61,8 @@ contract RPoolOrderBookTest is Test {
     event BidCancelled(bytes32 bidID);
 
     function _wrapUnsettle(address account, uint256 amount) private {
-        erc20.mint(account, amount);
-        vm.startPrank(account);
+        erc20.mint(temp, amount);
+        vm.startPrank(temp);
         erc20.approve(address(rtoken), amount);
         rtoken.wrap(amount);
         rtoken.transfer(account, amount);

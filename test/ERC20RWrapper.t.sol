@@ -26,6 +26,7 @@ contract ERC20RWrapperTest is Test {
     address private bob = makeAddr("bob");
     address private carol = makeAddr("carol");
     address private victim = makeAddr("victim");
+    address private temp = makeAddr("temp");
 
     event Transfer(
         address indexed from,
@@ -60,6 +61,7 @@ contract ERC20RWrapperTest is Test {
     error RecordAlreadySettled(address account, uint256 rawIndex);
     error InvalidUnfreezeAmount(uint256 currentFrozenInRecord, uint256 unfreezeAmount);
     error InvalidFreezeAmount(uint256 remainingToFreeze, uint256 freezeAmount);
+    error SelfTransferNotAllowed();
     
     function setUp() public {
         rtoken = new ERC20RWrapper("Recoverable ERC20", "ERC20R", SECONDS_PER_DAY, governance, address(erc20), 100);
@@ -94,6 +96,14 @@ contract ERC20RWrapperTest is Test {
         vm.startPrank(account);
         erc20.approve(address(rtoken), amount);
         rtoken.wrap(amount);
+        vm.stopPrank();
+    }
+
+    function _getUnsettled(address account, uint256 amount) private {
+        address t = makeAddr("t");
+        _wrap(t, amount);
+        vm.startPrank(t);
+        rtoken.transfer(account, amount);
         vm.stopPrank();
     }
 
@@ -173,6 +183,12 @@ contract ERC20RWrapperTest is Test {
         vm.stopPrank();
     }
 
+    function testSelfTransfer_fail() public {
+        _wrap(alice, 100);
+        vm.expectRevert(abi.encodeWithSelector(SelfTransferNotAllowed.selector));
+        _transferSettled(alice, alice, 100);
+    }
+
     
     function testAsERC20Transfer() public {
         // should be same as transfer settled 
@@ -210,12 +226,8 @@ contract ERC20RWrapperTest is Test {
     function testTransfer_Settled_Fail_Unsettled() public {
         uint256 ALICE_INITIAL = 50;
         uint256 TRANSFER_AMOUNT = 40;
-        _wrap(alice, ALICE_INITIAL);
-
-        // unsettle by sending back to herself
+        _getUnsettled(alice, ALICE_INITIAL);
         vm.startPrank(alice);
-        rtoken.transfer(alice, ALICE_INITIAL, true);
-
         assertEq(rtoken.balanceOf(alice, true), ALICE_INITIAL);
         assertEq(rtoken.balanceOf(alice, false), 0);
 
@@ -288,14 +300,16 @@ contract ERC20RWrapperTest is Test {
     function testTransfer_Unsettled_UnsettledTokens_Success() public {
         uint256 ALICE_INITIAL = 100;
         uint256 TRANSFER_AMOUNT = 60;
-        _wrap(alice, ALICE_INITIAL);
-        vm.startPrank(alice);
+        _wrap(bob, ALICE_INITIAL);
+        vm.startPrank(bob);
         
         // unsettle
         vm.expectEmit();
-        emit Transfer(alice, alice, 0, ALICE_INITIAL, 1);
+        emit Transfer(bob, alice, 0, ALICE_INITIAL, 1);
         rtoken.transfer(alice, ALICE_INITIAL, true);
+        vm.stopPrank();
 
+        vm.startPrank(alice);
         vm.expectEmit();
         emit UnsettledRecordSpend(alice, 1, TRANSFER_AMOUNT);
 
@@ -313,12 +327,9 @@ contract ERC20RWrapperTest is Test {
         uint256 ALICE_INITIAL = 100;
         uint256 ALICE_UNSETTLED = 40;
         uint256 TRANSFER_AMOUNT = 60;
-        _wrap(alice, ALICE_INITIAL);
+        _wrap(alice, ALICE_INITIAL - ALICE_UNSETTLED);
+        _getUnsettled(alice, ALICE_UNSETTLED);
         vm.startPrank(alice);
-
-        // unsettle some 
-        rtoken.transfer(alice, ALICE_UNSETTLED, false);
-
         // should transfer all of the unsettled 
         vm.expectEmit(address(rtoken));
         emit Transfer(alice, bob, ALICE_UNSETTLED, TRANSFER_AMOUNT - ALICE_UNSETTLED, 1);
@@ -687,10 +698,7 @@ contract ERC20RWrapperTest is Test {
 
     function _wrapUnsettleFreeze(uint256 initial, Suspension[] memory freezes) private {
         for (uint i = 0; i < freezes.length; i++) {
-            _wrap(freezes[i].account, initial);
-            vm.startPrank(freezes[i].account);
-            rtoken.transfer(freezes[i].account, initial, false);
-            vm.stopPrank();
+            _getUnsettled(freezes[i].account, initial);
         }
 
         _freeze(freezes);
@@ -782,13 +790,11 @@ contract ERC20RWrapperTest is Test {
         uint128 aliceAmount = 50;
         uint128 bobAmount = 30;
 
-        _wrap(alice, initial);
-        _transferSettled(alice, alice, initial - 2);
-        _transferSettled(alice, alice, 2);
+        _getUnsettled(alice, initial-2);
+        _getUnsettled(alice, 2);
 
-        _wrap(bob, initial);
-        _transferSettled(bob, bob, initial-2);
-        _transferSettled(bob, bob, 2);
+        _getUnsettled(bob, initial-2);
+        _getUnsettled(bob, 2);
 
         _freeze2(Suspension(alice, 1, aliceAmount), Suspension(bob, 1, bobAmount));
 
@@ -924,6 +930,7 @@ contract ERC20RWrapperTest is Test {
 
     function testExtendedScenario() public {
         uint256 initial = 100;
+        _getUnsettled(temp, initial);
         _wrap(alice, initial);
         _wrap(bob, initial);
         _wrap(carol, initial);
@@ -935,7 +942,8 @@ contract ERC20RWrapperTest is Test {
         // bob should have 10 unsettled and 100 settled
         _checkBalances(bob, 10, 100);
 
-        _transferAny(carol, carol, 15);
+        _transferAny(carol, temp, 15);
+        _transferAny(temp, carol, 15);
 
         // carol should still have 100 settled and 20 unsettled 
         _checkBalances(carol, 20, 100);
