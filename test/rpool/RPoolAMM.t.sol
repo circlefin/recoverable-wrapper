@@ -29,6 +29,7 @@ contract RPoolAMMTest is Test {
     address private q2 = vm.addr(2);
     address private alice = makeAddr("alice");
     address private bob = makeAddr("bob");
+    address private temp = makeAddr("temp");
     SigUtils internal sigUtils;
 
     event AddLiquidity(address indexed lp, uint256 deposit, uint256 LPshares);
@@ -118,6 +119,7 @@ contract RPoolAMMTest is Test {
         vm.startPrank(owner);
         ramm.addAllowedQuoter(account);
         vm.stopPrank();
+        assertEq(ramm.allowedQuoterRound(account), 1);
     }
 
     function testRemoveLiquidity_fail_tooManyShares() public {
@@ -167,8 +169,8 @@ contract RPoolAMMTest is Test {
     }
 
     function _wrapUnsettle(address account, uint256 amount) private {
-        erc20.mint(account, amount);
-        vm.startPrank(account);
+        erc20.mint(temp, amount);
+        vm.startPrank(temp);
         erc20.approve(address(rtoken), amount);
         rtoken.wrap(amount);
         rtoken.transfer(account, amount);
@@ -190,11 +192,11 @@ contract RPoolAMMTest is Test {
     function testExchange_fail_insufficientQuotes() public {
         _wrapUnsettle(alice, 100);
         _wrapUnsettle(bob, 100);
-        assertEq(rtoken.nonce(alice), 2);
+        assertEq(rtoken.nonce(alice), 1);
         _transferAny(alice, bob, 10);
-        assertEq(rtoken.nonce(alice), 3);
+        assertEq(rtoken.nonce(alice), 2);
         RPoolAMM.Quote[] memory quotes = new RPoolAMM.Quote[](1);
-        quotes[0] = _makeQuote(1, alice, 1, 10, block.timestamp + 1, 1000000);
+        quotes[0] = _makeQuote(1, alice, 2, 10, block.timestamp + 1, 1000000);
         vm.expectRevert("Insufficient quotes.");
         ramm.exchange(alice, 10, quotes);
     }
@@ -202,8 +204,8 @@ contract RPoolAMMTest is Test {
     function testExchange_fail_decreasingQuotes() public {
         _wrapUnsettle(alice, 100);
         RPoolAMM.Quote[] memory quotes = new RPoolAMM.Quote[](2);
-        quotes[0] = _makeQuote(1, alice, 2, 10, block.timestamp + 1, 1000000);
-        quotes[1] = _makeQuote(2, alice, 2, 10, block.timestamp + 1, 100000);
+        quotes[0] = _makeQuote(1, alice, 1, 10, block.timestamp + 1, 1000000);
+        quotes[1] = _makeQuote(2, alice, 1, 10, block.timestamp + 1, 100000);
         _addQuoter(q1, minQuoterDeposit, minQuoterDeposit);
         vm.expectRevert("Quotes must be increasing.");
         ramm.exchange(alice, 10, quotes);
@@ -230,8 +232,8 @@ contract RPoolAMMTest is Test {
     function testExchange_fail_quoterParticipated() public {
         _wrapUnsettle(alice, 100);
         RPoolAMM.Quote[] memory quotes = new RPoolAMM.Quote[](2);
-        quotes[0] = _makeQuote(1, alice, 2, 10, block.timestamp + 1, 1000000);
-        quotes[1] = _makeQuote(1, alice, 2, 10, block.timestamp + 1, 1000000);
+        quotes[0] = _makeQuote(1, alice, 1, 10, block.timestamp + 1, 1000000);
+        quotes[1] = _makeQuote(1, alice, 1, 10, block.timestamp + 1, 1000000);
         _addQuoter(q1, minQuoterDeposit, minQuoterDeposit);
         vm.expectRevert("Quoter already participated");
         ramm.exchange(alice, 10, quotes);
@@ -240,8 +242,8 @@ contract RPoolAMMTest is Test {
     function testExchange_fail_notWithinRiskBounds() public {
         _wrapUnsettle(alice, 100);
         RPoolAMM.Quote[] memory quotes = new RPoolAMM.Quote[](2);
-        quotes[0] = _makeQuote(1, alice, 2, 10, block.timestamp + 1, 700000);
-        quotes[1] = _makeQuote(2, alice, 2, 10, block.timestamp + 1, 800000);
+        quotes[0] = _makeQuote(1, alice, 1, 10, block.timestamp + 1, 700000);
+        quotes[1] = _makeQuote(2, alice, 1, 10, block.timestamp + 1, 800000);
         _addQuoter(q1, minQuoterDeposit, minQuoterDeposit);
         _addQuoter(q2, minQuoterDeposit, minQuoterDeposit);
         vm.expectRevert("Rate is not within risk bounds.");
@@ -256,8 +258,8 @@ contract RPoolAMMTest is Test {
     function testExchange_fail_allowance() public {
         _wrapUnsettle(alice, 100);
         RPoolAMM.Quote[] memory quotes = new RPoolAMM.Quote[](2);
-        quotes[0] = _makeQuote(1, alice, 2, 100, block.timestamp + 1, 800000);
-        quotes[1] = _makeQuote(2, alice, 2, 100, block.timestamp + 1, 900000);
+        quotes[0] = _makeQuote(1, alice, 1, 100, block.timestamp + 1, 800000);
+        quotes[1] = _makeQuote(2, alice, 1, 100, block.timestamp + 1, 900000);
         _addQuoter(q1, minQuoterDeposit, minQuoterDeposit);
         _addQuoter(q2, minQuoterDeposit, minQuoterDeposit);
         vm.expectRevert("ERC20: insufficient allowance");
@@ -274,8 +276,8 @@ contract RPoolAMMTest is Test {
         _wrapUnsettle(alice, 100);
         _approve(alice, address(ramm), 100, rtoken);
         RPoolAMM.Quote[] memory quotes = new RPoolAMM.Quote[](2);
-        quotes[0] = _makeQuote(1, alice, 2, 100, block.timestamp + 1, 800000);
-        quotes[1] = _makeQuote(2, alice, 2, 100, block.timestamp + 1, 900000);
+        quotes[0] = _makeQuote(1, alice, 1, 100, block.timestamp + 1, 800000);
+        quotes[1] = _makeQuote(2, alice, 1, 100, block.timestamp + 1, 900000);
         _addQuoter(q1, minQuoterDeposit, minQuoterDeposit);
         _addQuoter(q2, minQuoterDeposit, minQuoterDeposit);
         vm.expectEmit();
@@ -291,8 +293,8 @@ contract RPoolAMMTest is Test {
         uint256 expectedBack = 83;
         _approve(alice, address(ramm), 150, rtoken);
         RPoolAMM.Quote[] memory quotes = new RPoolAMM.Quote[](2);
-        quotes[0] = _makeQuote(1, alice, 2, 150, block.timestamp + 1, 800000);
-        quotes[1] = _makeQuote(2, alice, 2, 150, block.timestamp + 1, 800000);
+        quotes[0] = _makeQuote(1, alice, 1, 150, block.timestamp + 1, 800000);
+        quotes[1] = _makeQuote(2, alice, 1, 150, block.timestamp + 1, 800000);
         _addQuoter(q1, minQuoterDeposit, minQuoterDeposit);
         _addQuoter(q2, minQuoterDeposit, minQuoterDeposit);
         vm.expectEmit();
