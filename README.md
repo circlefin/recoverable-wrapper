@@ -3,7 +3,7 @@
 Developed by [Circle Research](https://www.circle.com/en/circle-research), the recoverable wrapper token (RWT) is a configurable mechanism for wrapping
 around ERC-20 tokens to support asset recovery within a limited time window after an asset transfer. For more information, see the [whitepaper](https://www.circle.com/hubfs/Circle%20Research/Whitepapers/Recoverable_Wrapper_Tokens_Circle_Research.pdf).
 
-This repo contains an audited implementation (configuration 1) of recoverable wrapper tokens.
+This repo contains an implementation (configuration 1) of recoverable wrapper tokens.
 
 # Development and contribution
 
