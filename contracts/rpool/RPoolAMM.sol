@@ -164,7 +164,7 @@ contract RPoolAMM is Ownable {
 
     /**
      * Allows caller to deposit base ERC20 tokens as an LP and receive LP shares. 
-     * The number of LP shares they receive satisfies the equation t/(totalShares + t) = deposit/(totalRtokens + deposit)
+     * The number of LP shares they receive (t) satisfies the equation t/(totalShares + t) = deposit/(totalRtokens + deposit)
      * This is to incentivize deposits even after a recovery happens in the pool. 
      * If a recovery completely drains the pool however, then the pool is no longer usable. 
      * @param deposit amount of base ERC20 from the LP

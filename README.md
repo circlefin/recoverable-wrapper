@@ -1,10 +1,13 @@
 # Recoverable Wrapper Tokens
 
-This repo contains implementations pertaining to recoverable wrapper tokens.
+Developed by [Circle Research](https://www.circle.com/en/circle-research), the recoverable wrapper token (RWT) is a configurable mechanism for wrapping
+around ERC-20 tokens to support asset recovery within a limited time window after an asset transfer. For more information, see the [whitepaper](https://www.circle.com/hubfs/Circle%20Research/Whitepapers/Recoverable_Wrapper_Tokens_Circle_Research.pdf).
 
-# Get started
+This repo contains an implementation (configuration 1) of recoverable wrapper tokens.
 
-## Install dependences
+# Development and contribution
+
+## Install dependencies
 
 - Run `git submodule update --init --recursive` to update/download all libraries.
 - Run `nvm use 16` to use node 16.
