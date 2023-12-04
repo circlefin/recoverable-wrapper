@@ -9,7 +9,7 @@
 
 pragma solidity 0.8.20;
 
-import {IERC20R} from "../interfaces/IERC20R.sol";
+import {IRecoverableWrapper} from "../interfaces/IRecoverableWrapper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
@@ -19,7 +19,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * This contract is for demonstration purposes and has not been audited or meant for production use.
  */
 contract RPoolOrderBook {
-    IERC20R public token;
+    IRecoverableWrapper public token;
     IERC20 public base;
 
     struct BidInfo {
@@ -59,7 +59,7 @@ contract RPoolOrderBook {
     event BidCancelled(bytes32 bidID);
 
     constructor(address token_) {
-        token = IERC20R(token_);
+        token = IRecoverableWrapper(token_);
         base = IERC20(token.baseToken());
     }
 

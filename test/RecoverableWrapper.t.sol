@@ -11,7 +11,7 @@ pragma solidity 0.8.20;
 
 import {Suspension, Record, RecordsDeque} from "../contracts/util/RecordUtil.sol";
 import {Test} from "forge-std/src/Test.sol";
-import {ERC20RWrapper} from "../contracts/ERC20R/ERC20RWrapper.sol";
+import {RecoverableWrapper} from "../contracts/rwt/RecoverableWrapper.sol";
 import {MockERC20} from "./utils/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SECONDS_PER_DAY} from "./utils/constants.sol";
@@ -19,7 +19,7 @@ import {SECONDS_PER_DAY} from "./utils/constants.sol";
 // solhint-disable var-name-mixedcase
 
 contract ERC20RWrapperTest is Test {
-    ERC20RWrapper private rtoken;
+    RecoverableWrapper private rtoken;
     address private governance = makeAddr("governance");
     MockERC20 private erc20 = new MockERC20();
     address private alice = makeAddr("alice");
@@ -64,7 +64,7 @@ contract ERC20RWrapperTest is Test {
     error SelfTransferNotAllowed();
     
     function setUp() public {
-        rtoken = new ERC20RWrapper("Recoverable ERC20", "ERC20R", SECONDS_PER_DAY, governance, address(erc20), 100);
+        rtoken = new RecoverableWrapper("Recoverable ERC20", "ERC20R", SECONDS_PER_DAY, governance, address(erc20), 100);
     }
 
     function testName() public {

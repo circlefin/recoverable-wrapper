@@ -11,7 +11,7 @@ pragma solidity 0.8.20;
 
 import {Test} from "forge-std/src/Test.sol";
 import {MockERC20} from "../utils/MockERC20.sol";
-import {ERC20RWrapper} from "../../contracts/ERC20R/ERC20RWrapper.sol";
+import {RecoverableWrapper} from "../../contracts/rwt/RecoverableWrapper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SigUtils} from "../utils/SigUtils.sol";
 import {SECONDS_PER_DAY} from "../utils/constants.sol";
@@ -20,7 +20,7 @@ import {RPoolAMM} from "../../contracts/rpool/RPoolAMM.sol";
 contract RPoolAMMTest is Test {
     address private governance = makeAddr("governance");
     MockERC20 private erc20 = new MockERC20();
-    ERC20RWrapper private rtoken = new ERC20RWrapper("Recoverable ERC20", "ERC20R", SECONDS_PER_DAY, governance, address(erc20), 100);
+    RecoverableWrapper private rtoken = new RecoverableWrapper("Recoverable ERC20", "ERC20R", SECONDS_PER_DAY, governance, address(erc20), 100);
     RPoolAMM private ramm;
     uint8 private constant minQuotes = 2;
     uint256 private constant minQuoterDeposit = 100;

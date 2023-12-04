@@ -12,7 +12,7 @@ pragma solidity 0.8.20;
 /**
  * @dev Interface of the ERC20R standard.
  */
-interface IERC20R {
+interface IRecoverableWrapper {
 
    /**
     * @dev Emitted when a transfer occurs. Could be a settled transfer or 
