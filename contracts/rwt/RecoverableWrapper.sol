@@ -9,14 +9,14 @@
 
 pragma solidity 0.8.20;
 
-import {IERC20R} from "../interfaces/IERC20R.sol";
+import {IRecoverableWrapper} from "../interfaces/IRecoverableWrapper.sol";
 import {RecordsDeque, RecordsDequeLib, Record, Suspension} from "../util/RecordUtil.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-contract ERC20RWrapper is IERC20R, ERC20 {
+contract RecoverableWrapper is IRecoverableWrapper, ERC20 {
     using RecordsDequeLib for RecordsDeque;
     using SafeCast for uint256;
     uint16 private immutable MAX_TO_CLEAN;
@@ -115,14 +115,14 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function baseToken() external view virtual override returns (address) {
         return address(baseERC20);
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function balanceOf(address account, bool includeUnsettled)
         external
@@ -172,14 +172,14 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function nonce(address account) external view override returns (uint128) {
         return _accountState[account].nonce;
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function wrap(uint256 amount) external override {
         // Caller must have already approved account 
@@ -194,7 +194,7 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function unwrap(uint256 amount) external override {
         if (unwrapDisabled[msg.sender]) {
@@ -213,7 +213,7 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function unwrapTo(address to, uint256 amount) external override {
         if (unwrapDisabled[msg.sender]) {
@@ -227,7 +227,7 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function disableUnwrap() external override {
         unwrapDisabled[msg.sender] = true;
@@ -235,7 +235,7 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function transfer(
         address to,
@@ -257,7 +257,7 @@ contract ERC20RWrapper is IERC20R, ERC20 {
     }
 
     /**
-     * @inheritdoc IERC20R
+     * @inheritdoc IRecoverableWrapper
      */
     function transferFrom(
         address from,

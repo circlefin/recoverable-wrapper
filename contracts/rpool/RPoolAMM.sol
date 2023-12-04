@@ -9,7 +9,7 @@
 
 pragma solidity 0.8.20;
 
-import {IERC20R} from "../interfaces/IERC20R.sol";
+import {IRecoverableWrapper} from "../interfaces/IRecoverableWrapper.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -33,7 +33,7 @@ contract RPoolAMM is Ownable {
     // keccak256(address account, uint64 nonce, uint256 amount, uint256 expiration, uint256 quote)
     bytes32 public constant QUOTE_TYPE_HASH = 0x550c61ee2589627c43a1db81922bc00c1bb90a2545dd2325e49034b5128dfe1b;
 
-    IERC20R public immutable token;
+    IRecoverableWrapper public immutable token;
     IERC20 public immutable baseToken;
 
     /**
@@ -127,7 +127,7 @@ contract RPoolAMM is Ownable {
                 uint8 minQuotes_, 
                 uint256 minQuoterShareValue_,
                 uint256 threshold_) {
-        token = IERC20R(token_);
+        token = IRecoverableWrapper(token_);
         baseToken = IERC20(token.baseToken());
         maxExchangeRate = maxExchangeRate_;
         minExchangeRate = minExchangeRate_;

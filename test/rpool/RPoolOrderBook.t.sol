@@ -11,7 +11,7 @@ pragma solidity 0.8.20;
 
 import {Test} from "forge-std/src/Test.sol";
 import {MockERC20, ERC20} from "../utils/MockERC20.sol";
-import {ERC20RWrapper} from "../../contracts/ERC20R/ERC20RWrapper.sol";
+import {RecoverableWrapper} from "../../contracts/rwt/RecoverableWrapper.sol";
 import {SECONDS_PER_DAY} from "../utils/constants.sol";
 import {RPoolOrderBook} from "../../contracts/rpool/RPoolOrderBook.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -20,7 +20,7 @@ contract RPoolOrderBookTest is Test {
     using SafeCast for uint256;
     MockERC20 private erc20 = new MockERC20();
     address governance = makeAddr('governance');
-    ERC20RWrapper private rtoken = new ERC20RWrapper("Recoverable ERC20", "ERC20R", SECONDS_PER_DAY, governance, address(erc20), 100);
+    RecoverableWrapper private rtoken = new RecoverableWrapper("Recoverable ERC20", "ERC20R", SECONDS_PER_DAY, governance, address(erc20), 100);
     RPoolOrderBook private rpob;
     address alice = makeAddr('alice');
     address bob = makeAddr('bob');
