@@ -61,7 +61,8 @@ contract RPoolAMM is Ownable {
     uint8 public constant decimals = 6;
 
     /**
-     * @notice LP token balance
+     * @notice LP token balance. In this simple POC, these are implemented as non-transferable, 
+     * but in practice, this RPoolAMM contract would be an ERC20 and therefore add transferability. 
      */
     mapping(address => uint256) public lpShares;
 
