@@ -3,7 +3,7 @@
     "lint": "solhint '**/*.sol'"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.6.0"
+    "@openzeppelin/contracts": "^4.9.6"
   },
   "devDependencies": {
     "solhint": "^3.4.1"
